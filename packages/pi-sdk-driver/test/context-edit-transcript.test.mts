@@ -16,8 +16,8 @@ const assistant = (text: string) => ({
   role: "assistant" as const,
   content: [{ type: "text" as const, text }],
   api: "openai-completions" as const,
-  provider: "fixture",
-  model: "fixture",
+  provider: "llamacpp" as const,
+  model: "Qwen3.5-9B" as const,
   usage: {
     input: 0,
     output: 0,

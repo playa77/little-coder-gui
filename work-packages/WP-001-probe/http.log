@@ -1,0 +1,12 @@
+REQ /v1/chat/completions auth=Bearer probe-no-auth msgs=2 tools=["read","bash","edit","write"]
+RES call#1 finish=tool_calls toolcall=write
+REQ /v1/chat/completions auth=Bearer probe-no-auth msgs=2 tools=["read","bash","edit","write"]
+RES call#2 finish=stop toolcall=none
+REQ /v1/chat/completions auth=Bearer probe-no-auth msgs=2 tools=["read","bash","edit","write"]
+RES call#3 finish=stop toolcall=none
+REQ /v1/chat/completions auth=Bearer probe-no-auth msgs=2 tools=["read","bash","edit","write"]
+RES call#4 finish=stop toolcall=none
+REQ /v1/chat/completions auth=Bearer probe-no-auth msgs=2 tools=["read","bash","edit","write"]
+RES call#5 finish=stop toolcall=none
+REQ /v1/chat/completions auth=Bearer probe-no-auth msgs=2 tools=["read","bash","edit","write"]
+RES call#6 finish=stop toolcall=none

@@ -35,6 +35,7 @@ import {
   isGlobalNpmLookupError,
 } from "./npm-package-fallback.js";
 import { skillSlashCommand } from "./runtime-command-utils.js";
+import { createFixedModelExtension, type FixedModelRuntimeOptions } from "./fixed-model.js";
 import {
   findBuiltinExtension,
   type BuiltinExtension,
@@ -110,6 +111,7 @@ interface RuntimeContext {
 
 export interface RuntimeSupervisorOptions {
   readonly agentDir?: string;
+  readonly fixedModelRuntimeOptions?: FixedModelRuntimeOptions;
   readonly builtinExtensions?: readonly BuiltinExtension[];
   readonly isBuiltinExtensionEnabled?: BuiltinExtensionEnabled;
   readonly customProviderStore?: CustomProviderStore;
@@ -129,6 +131,7 @@ export class RuntimeSupervisor implements RuntimeResourceDriver {
   private readonly authPath: string;
   private readonly builtinExtensions: readonly BuiltinExtension[];
   private readonly isBuiltinExtensionEnabled: BuiltinExtensionEnabled;
+  private readonly fixedModelRuntimeOptions: FixedModelRuntimeOptions | undefined;
   private readonly customProviderStore: CustomProviderStore;
   private readonly contexts = new Map<string, RuntimeContext>();
 
@@ -139,6 +142,7 @@ export class RuntimeSupervisor implements RuntimeResourceDriver {
     this.authPath = deps.authPath;
     this.builtinExtensions = options.builtinExtensions ?? [];
     this.isBuiltinExtensionEnabled = options.isBuiltinExtensionEnabled ?? (() => true);
+    this.fixedModelRuntimeOptions = options.fixedModelRuntimeOptions;
     this.customProviderStore = deps.customProviderStore;
   }
 
@@ -512,6 +516,13 @@ export class RuntimeSupervisor implements RuntimeResourceDriver {
   private inventoryExtensionFactories(): InlineExtension[] {
     return [
       ...piAddonExtensions(),
+      // WP-002: the runtime snapshot must report the enforced provider/model so
+      // read-only displays and gatekeeping see exactly one selectable model.
+      {
+        name: "pi-gui-fixed-model",
+        hidden: true,
+        factory: createFixedModelExtension(this.fixedModelRuntimeOptions).factory,
+      } as InlineExtension,
       ...this.builtinExtensions.map(({ name, factory }) => ({ name, factory })),
     ];
   }

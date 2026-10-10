@@ -109,6 +109,9 @@ async function fixture(
   const driver = new PiSdkDriver({
     agentDir,
     catalogFilePath: join(root, "catalogs.json"),
+    // WP-002: the fixed-model registration must not probe the (unreachable)
+    // endpoint; these lifecycle tests allow zero network requests.
+    fixedModelRuntimeOptions: { probeContextWindow: false },
     createAgentSessionRuntimeImpl: async (options) => {
       runtime = await createAgentSessionRuntimeWithNpmFallback({
         ...options,
@@ -126,10 +129,7 @@ async function fixture(
       return runtime;
     },
   });
-  const snapshot = await driver.createSession(
-    { workspaceId: "boundary-workspace", path: cwd },
-    { initialModel: { provider: "boundary-test", modelId: "scripted" } },
-  );
+  const snapshot = await driver.createSession({ workspaceId: "boundary-workspace", path: cwd });
   const ref = snapshot.ref;
   const unsubscribe = driver.subscribe(ref, (event) => {
     events.push(event);

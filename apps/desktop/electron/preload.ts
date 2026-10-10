@@ -286,13 +286,6 @@ contextBridge.exposeInMainWorld("piApp", {
     ipcRenderer.invoke(desktopIpc.refreshRuntime, workspaceId) as Promise<DesktopAppState>,
   setModelSettingsScopeMode: (mode: "app-global" | "per-repo") =>
     ipcRenderer.invoke(desktopIpc.setModelSettingsScopeMode, mode) as Promise<DesktopAppState>,
-  setDefaultModel: (workspaceId: string, provider: string, modelId: string) =>
-    ipcRenderer.invoke(
-      desktopIpc.setDefaultModel,
-      workspaceId,
-      provider,
-      modelId,
-    ) as Promise<DesktopAppState>,
   setDefaultThinkingLevel: (
     workspaceId: string,
     thinkingLevel: RuntimeSettingsSnapshot["defaultThinkingLevel"],
@@ -301,14 +294,6 @@ contextBridge.exposeInMainWorld("piApp", {
       desktopIpc.setDefaultThinkingLevel,
       workspaceId,
       thinkingLevel,
-    ) as Promise<DesktopAppState>,
-  setSessionModel: (workspaceId: string, sessionId: string, provider: string, modelId: string) =>
-    ipcRenderer.invoke(
-      desktopIpc.setSessionModel,
-      workspaceId,
-      sessionId,
-      provider,
-      modelId,
     ) as Promise<DesktopAppState>,
   setSessionThinkingLevel: (
     workspaceId: string,

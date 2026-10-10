@@ -21,7 +21,6 @@ import type {
   SessionTreeSnapshot,
 } from "@pi-gui/session-driver/types";
 import type {
-  CreateSessionOptions,
   HostUiResponse,
   SessionConfig,
   SessionUsageSnapshot,
@@ -461,7 +460,6 @@ export class DesktopAppStore {
         this.cancelPendingDialogsForSession(sessionRef),
       clearPendingAutoTitle: (sessionRef) => this.clearPendingAutoTitle(sessionRef),
       updateSessionConfig: (sessionRef, config) => this.updateSessionConfig(sessionRef, config),
-      buildCreateSessionOptions: (workspaceId) => this.buildCreateSessionOptions(workspaceId),
       resolveExtensionFlags: (workspaceId, requested) =>
         this.resolveExtensionFlags(workspaceId, requested),
       extensionFlagsForSession: (sessionRef) =>
@@ -497,7 +495,6 @@ export class DesktopAppStore {
       ensureSessionSubscription: (sessionRef) => this.ensureSessionSubscription(sessionRef),
       subscribeToSessionEvents: (listener) => this.subscribeToSessionEvents(listener),
       updateSessionConfig: (sessionRef, config) => this.updateSessionConfig(sessionRef, config),
-      buildCreateSessionOptions: (workspaceId) => this.buildCreateSessionOptions(workspaceId),
       getQueuedComposerMessages: (sessionRef) => this.getQueuedComposerMessages(sessionRef),
       seedSession: (snapshot) => {
         const key = sessionKey(snapshot.ref);
@@ -555,7 +552,6 @@ export class DesktopAppStore {
       },
       ensureSessionSubscription: (sessionRef) => this.ensureSessionSubscription(sessionRef),
       ensureSessionReady: (sessionRef) => this.ensureSessionReady(sessionRef),
-      buildCreateSessionOptions: (workspaceId) => this.buildCreateSessionOptions(workspaceId),
       updateComposerDraft: (sessionRef, draft) =>
         this.conversationOwner.updateComposerDraft(sessionRef, draft),
       deliverBackgroundInstruction: (sessionRef, text) =>
@@ -1494,41 +1490,6 @@ export class DesktopAppStore {
         : this.withError(
             "Some open threads could not reload; they pick up the change when reopened.",
           );
-    });
-  }
-
-  async setSessionModel(
-    target: WorkspaceSessionTarget,
-    provider: string,
-    modelId: string,
-  ): Promise<DesktopAppState> {
-    return this.conversationOwner.setSessionModel(target, provider, modelId);
-  }
-
-  async setDefaultModel(
-    workspaceId: string,
-    provider: string,
-    modelId: string,
-  ): Promise<DesktopAppState> {
-    const targetWorkspaceId = this.resolveModelSettingsWorkspaceId(workspaceId);
-    if (this.state.modelSettingsScopeMode !== "per-repo") {
-      return this.withRuntimeUpdate(targetWorkspaceId, (ws) =>
-        this.driver.runtimeSupervisor.setDefaultModel(ws, { provider, modelId }),
-      );
-    }
-    await this.initialize();
-    const ws = this.workspaceRefFromState(targetWorkspaceId);
-    if (!ws) {
-      return this.withError(`Unknown workspace: ${targetWorkspaceId}`);
-    }
-    return this.withErrorHandling(async () => {
-      const snapshot = await this.driver.runtimeSupervisor.setProjectDefaultModel(ws, {
-        provider,
-        modelId,
-      });
-      await this.recordSettingsSelfWrite();
-      this.runtimeByWorkspace.set(ws.workspaceId, snapshot);
-      return this.refreshState({ clearLastError: true });
     });
   }
 
@@ -3602,29 +3563,6 @@ export class DesktopAppStore {
     });
   }
 
-  async buildCreateSessionOptions(workspaceId: string): Promise<CreateSessionOptions | undefined> {
-    if (this.state.modelSettingsScopeMode !== "per-repo") {
-      return undefined;
-    }
-    const effectiveSettings = await this.loadEffectiveModelSettingsForWorkspace(workspaceId);
-    if (!effectiveSettings) {
-      return undefined;
-    }
-    return {
-      ...(effectiveSettings.defaultProvider && effectiveSettings.defaultModelId
-        ? {
-            initialModel: {
-              provider: effectiveSettings.defaultProvider,
-              modelId: effectiveSettings.defaultModelId,
-            },
-          }
-        : {}),
-      ...(effectiveSettings.defaultThinkingLevel
-        ? { initialThinkingLevel: effectiveSettings.defaultThinkingLevel }
-        : {}),
-    };
-  }
-
   private async resolveExtensionFlags(
     workspaceId: string,
     requested: ExtensionFlagValues | undefined,
@@ -3942,12 +3880,6 @@ export class DesktopAppStore {
         workspaceRef,
         settings.defaultThinkingLevel,
       );
-    }
-    if (settings.defaultProvider && settings.defaultModelId) {
-      await this.driver.runtimeSupervisor.setDefaultModel(workspaceRef, {
-        provider: settings.defaultProvider,
-        modelId: settings.defaultModelId,
-      });
     }
     if (this.runtimeByWorkspace.has(workspaceRef.workspaceId)) {
       this.runtimeByWorkspace.set(

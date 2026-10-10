@@ -104,7 +104,7 @@ await test("a workspace resolves its own models for a provider id another worksp
     "workspace-b",
     providerExtensionSource("shared-id", "model-b", ENDPOINT_B, KEY_B),
   );
-  const { driver } = makeDriver(root, agentDir);
+  const { driver, runtimeFor } = makeDriver(root, agentDir);
 
   const { workspace: workspaceA } = await driver.syncWorkspace(pathA);
   const { workspace: workspaceB } = await driver.syncWorkspace(pathB);
@@ -112,11 +112,11 @@ await test("a workspace resolves its own models for a provider id another worksp
   await driver.runtimeSupervisor.getRuntimeSnapshot(workspaceB);
 
   // B registered `shared-id` last. A must still resolve the model A advertises.
-  const snapshot = await driver.createSession(workspaceA, {
-    initialModel: { provider: "shared-id", modelId: "model-a" },
-  });
-  assert.equal(snapshot.config?.provider, "shared-id");
-  assert.equal(snapshot.config?.modelId, "model-a");
+  const snapshot = await driver.createSession(workspaceA);
+  // WP-002: the snapshot is always the fixed model now; the per-workspace
+  // provider isolation this test guards lives in the session's runtime.
+  const sessionRuntime = runtimeFor(workspaceA.path);
+  assert.ok(sessionRuntime.getModel("shared-id", "model-a"));
   await driver.closeSession(snapshot.ref);
 });
 
@@ -138,9 +138,7 @@ await test("a session keeps its own workspace's endpoint and key for a shared pr
   const { workspace: workspaceB } = await driver.syncWorkspace(pathB);
   await driver.runtimeSupervisor.getRuntimeSnapshot(workspaceA);
 
-  const snapshot = await driver.createSession(workspaceA, {
-    initialModel: { provider: "shared-id", modelId: "model-x" },
-  });
+  const snapshot = await driver.createSession(workspaceA);
 
   // Opening workspace B while A has a live session must not re-point that
   // session — the mixing a runtime shared across workspaces produced.
@@ -177,9 +175,7 @@ await test("removing a workspace leaves another workspace's session resolution i
 
   await driver.removeWorkspace(workspaceA.workspaceId);
 
-  const snapshot = await driver.createSession(workspaceB, {
-    initialModel: { provider: "shared-id", modelId: "model-b" },
-  });
+  const snapshot = await driver.createSession(workspaceB);
   const modelRuntime = runtimeFor(workspaceB.path);
   const model = modelRuntime.getModel("shared-id", "model-b");
   assert.ok(model, "workspace B must still resolve its own model after workspace A is removed");
@@ -242,9 +238,7 @@ await test("an override-only registration keeps the models the first registratio
     "the override-only registration must not drop the model the first call defined",
   );
 
-  const snapshot = await driver.createSession(workspace, {
-    initialModel: { provider: "merge-id", modelId: "model-a" },
-  });
+  const snapshot = await driver.createSession(workspace);
   const model = runtimeFor(workspace.path).getModel("merge-id", "model-a");
   assert.ok(model, "the merged provider must stay resolvable for sessions");
   assert.equal(model.baseUrl, ENDPOINT_B, "the override-only registration must re-point the model");

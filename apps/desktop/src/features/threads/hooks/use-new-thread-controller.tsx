@@ -66,9 +66,6 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
   const [environment, setEnvironment] = useState<NewThreadEnvironment>("local");
   const [prompt, setPrompt] = useState("");
   const [attachments, setAttachments] = useState<readonly ComposerAttachment[]>([]);
-  const [provider, setProvider] = useState<string | undefined>();
-  const [modelId, setModelId] = useState<string | undefined>();
-  const [thinkingLevel, setThinkingLevel] = useState<string | undefined>();
   // Flag edits on this surface, laid over the workspace's remembered defaults.
   const [extensionFlagEdits, setExtensionFlagEdits] = useState<ExtensionFlagValues>({});
   const [composerError, setComposerError] = useState<string | undefined>();
@@ -81,16 +78,6 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
   const workspace =
     rootWorkspaceOptions.find((entry) => entry.id === rootWorkspaceId) ?? rootWorkspaceOptions[0];
   const runtime = snapshot ? getEffectiveModelRuntime(snapshot, workspace) : undefined;
-  const defaultEnabled = buildModelOptions(runtime).some(
-    (m) =>
-      m.providerId === runtime?.settings.defaultProvider &&
-      m.modelId === runtime?.settings.defaultModelId,
-  );
-  const resolvedProvider =
-    provider ?? (defaultEnabled ? runtime?.settings.defaultProvider : undefined);
-  const resolvedModelId =
-    modelId ?? (defaultEnabled ? runtime?.settings.defaultModelId : undefined);
-  const resolvedThinkingLevel = thinkingLevel ?? runtime?.settings.defaultThinkingLevel;
   const workspaceFlagDefaults = workspace
     ? snapshot?.extensionFlagsByWorkspace[workspace.id]
     : undefined;
@@ -101,10 +88,7 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
   const setExtensionFlag = useCallback((name: string, value: boolean | string) => {
     setExtensionFlagEdits((current) => ({ ...current, [name]: value }));
   }, []);
-  const modelOnboarding = deriveModelOnboardingState(runtime, {
-    provider: resolvedProvider,
-    modelId: resolvedModelId,
-  });
+  const modelOnboarding = deriveModelOnboardingState(runtime, undefined);
 
   const focusComposer = useCallback(() => {
     window.requestAnimationFrame(() => {
@@ -177,9 +161,6 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
       setEnvironment("local");
       setPrompt("");
       setAttachments([]);
-      setProvider(undefined);
-      setModelId(undefined);
-      setThinkingLevel(undefined);
       setExtensionFlagEdits({});
       setComposerError(undefined);
     },
@@ -208,9 +189,6 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
     setPendingWorkspaceId("");
     setRootWorkspaceId(workspaceId);
     setAttachments([]);
-    setProvider(undefined);
-    setModelId(undefined);
-    setThinkingLevel(undefined);
     setExtensionFlagEdits({});
     setComposerError(undefined);
   }, []);
@@ -219,7 +197,6 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
     composerDraft: prompt,
     setComposerDraft: updatePrompt,
     selectedRuntime: runtime,
-    selectedModelRuntime: runtime,
     sessionCommands: [],
     commandCompatibility: [],
     selectedSessionKey: `new-thread:${workspace?.id ?? ""}`,
@@ -233,11 +210,6 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
     updateSnapshot,
     allowTreeCommand: false,
     immediateCommandMode: "prefill",
-    onSelectModelOption: (nextProvider, nextModelId) => {
-      setProvider(nextProvider);
-      setModelId(nextModelId);
-    },
-    onSelectThinkingOption: setThinkingLevel,
     onSelectLoginProvider: (providerId) => {
       if (!api || !workspace) {
         return;
@@ -309,9 +281,6 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
       environment,
       prompt,
       attachments,
-      provider: resolvedProvider,
-      modelId: resolvedModelId,
-      thinkingLevel: resolvedThinkingLevel,
       ...(Object.keys(extensionFlags).length > 0 ? { extensionFlags } : {}),
     };
     startingGenerationRef.current = generation;
@@ -322,9 +291,6 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
         }
         setPrompt("");
         setAttachments([]);
-        setProvider(undefined);
-        setModelId(undefined);
-        setThinkingLevel(undefined);
         setExtensionFlagEdits({});
         setEnvironment("local");
       })
@@ -343,9 +309,6 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
     extensionFlags,
     modelOnboarding.requiresModelSelection,
     prompt,
-    resolvedModelId,
-    resolvedProvider,
-    resolvedThinkingLevel,
     rootWorkspaceId,
     setSnapshot,
   ]);
@@ -479,9 +442,6 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
       prompt,
       attachments,
       composerError,
-      resolvedProvider,
-      resolvedModelId,
-      resolvedThinkingLevel,
       extensionFlags,
       setExtensionFlag,
       modelOnboarding,
@@ -489,9 +449,6 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
       mentionMenu,
       setPrompt,
       setEnvironment,
-      setProvider,
-      setModelId,
-      setThinkingLevel,
       setPendingWorkspaceId,
       selectWorkspace,
       addAttachments,
@@ -513,9 +470,6 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
       prompt,
       attachments,
       composerError,
-      resolvedProvider,
-      resolvedModelId,
-      resolvedThinkingLevel,
       extensionFlags,
       setExtensionFlag,
       modelOnboarding,

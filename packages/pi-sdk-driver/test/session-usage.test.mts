@@ -93,16 +93,18 @@ async function runOneTurn(t: TestContext, promptCache: Record<string, number> | 
   const driver = new PiSdkDriver({
     agentDir,
     catalogFilePath: join(root, "catalogs.json"),
+    // WP-002: the fixed-model registration must not probe the (unreachable)
+    // endpoint in tests; pi's own context math runs against the scripted model.
+    fixedModelRuntimeOptions: { probeContextWindow: false },
     createAgentSessionRuntimeImpl: async (options) => {
       const runtime = await createAgentSessionRuntimeWithNpmFallback({ ...options, tools: [] });
       runtime.session.agent.streamFunction = reply;
       return runtime;
     },
   });
-  const snapshot = await driver.createSession(
-    { workspaceId: "usage-workspace", path: cwd },
-    { initialModel: { provider: "usage-test", modelId: "scripted" } },
-  );
+  // The models.json "usage-test" provider stands in for the fixed model's
+  // endpoint; session open no longer accepts an initial model selection.
+  const snapshot = await driver.createSession({ workspaceId: "usage-workspace", path: cwd });
   const events: SessionDriverEvent[] = [];
   const completed = new Promise<Extract<SessionDriverEvent, { type: "runCompleted" }>>(
     (resolve) => {
@@ -122,7 +124,10 @@ async function runOneTurn(t: TestContext, promptCache: Record<string, number> | 
 
 await test("a fresh session reports its context window before any turn", async (t) => {
   const { opened } = await runOneTurn(t, undefined);
-  assert.equal(opened.usage?.context?.contextWindow, 128000);
+  // WP-002: the driver's own llamacpp registration supplies the context window
+  // (declared 32768, or the probed value); the models.json provider below is
+  // no longer what a session resolves.
+  assert.equal(opened.usage?.context?.contextWindow, 32768);
   assert.equal(opened.usage?.lastTurn, undefined);
   assert.deepEqual(opened.usage?.cache, {});
 });
@@ -134,8 +139,8 @@ await test("a completed turn reports pi's context, cache and totals", async (t) 
   assert.ok(usage.context);
   // pi counts the last reply's input + output + cache read + cache write.
   assert.equal(usage.context.tokens, 10050);
-  assert.equal(usage.context.contextWindow, 128000);
-  assert.equal(usage.context.compactAtTokens, 128000 - 16000);
+  assert.equal(usage.context.contextWindow, 32768);
+  assert.equal(usage.context.compactAtTokens, 32768 - 16000);
   assert.deepEqual(usage.lastTurn, { input: 200, output: 50, cacheRead: 9000, cacheWrite: 800 });
   assert.deepEqual(usage.totals, {
     input: 200,
@@ -145,21 +150,24 @@ await test("a completed turn reports pi's context, cache and totals", async (t) 
     cost: 0.25,
   });
   assert.equal(usage.subscription, false);
-  // The cache entry lapses one lifetime after the request that last touched it.
-  assert.deepEqual(usage.cache, {
-    lifetimeSeconds: 300,
-    expiresAt: new Date(REQUEST_STARTED_AT + 300_000).toISOString(),
-  });
+  // WP-002: the session runs the driver-registered llamacpp model, which
+  // declares no prompt-cache lifetime (llama.cpp/vLLM serving exposes none the
+  // GUI can rely on), so the cache expiry is unknown rather than 300s.
+  assert.deepEqual(usage.cache, {});
 });
 
-await test("switching models drops the old model's cache expiry", async (t) => {
-  const { driver, completed, events } = await runOneTurn(t, { short: 300 });
-  await driver.setSessionModel(completed.sessionRef, { provider: "usage-test", modelId: "other" });
-  const latest = events.filter((event) => event.type === "sessionUpdated").at(-1);
-  assert.ok(latest?.type === "sessionUpdated");
-  assert.equal(latest.snapshot.usage?.context?.contextWindow, 64000);
-  // The last reply was the other model's, so nothing is cached for this one.
-  assert.deepEqual(latest.snapshot.usage?.cache, { lifetimeSeconds: 300 });
+await test("the driver surface exposes no model re-selection path (WP-002)", async (t) => {
+  const { driver, completed } = await runOneTurn(t, { short: 300 });
+  // WP-002 deleted setSessionModel from the SessionDriver contract; the method
+  // must not survive on the driver object the app owner talks to.
+  assert.equal(
+    "setSessionModel" in driver,
+    false,
+    "setSessionModel must not exist on PiSdkDriver after WP-002",
+  );
+  // The driver's only session carries the fixed model, not a models.json entry.
+  assert.equal(completed.snapshot.config?.provider, "llamacpp");
+  assert.equal(completed.snapshot.config?.modelId, "Qwen3.5-9B");
 });
 
 await test("a model without a declared cache lifetime reports unknown expiry", async (t) => {

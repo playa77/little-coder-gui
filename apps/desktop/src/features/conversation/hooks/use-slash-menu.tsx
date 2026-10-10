@@ -7,7 +7,6 @@ import type {
   WorkspaceRecord,
 } from "../../../../contracts/desktop-state";
 import {
-  buildModelOptions,
   isExactSlashCommand,
   buildSlashCommandSections,
   flattenSlashSections,
@@ -19,7 +18,6 @@ import {
   type ComposerSlashOption,
 } from "../composer-commands";
 import type { PiDesktopApi } from "../../../../contracts/ipc";
-import { deriveModelOnboardingState } from "../../settings/model-onboarding";
 import type { SettingsSection } from "../../settings/settings-view";
 
 interface ActiveSlashFlow {
@@ -61,7 +59,6 @@ interface UseSlashMenuParams {
   readonly composerDraft: string;
   readonly setComposerDraft: Dispatch<SetStateAction<string>>;
   readonly selectedRuntime: RuntimeSnapshot | undefined;
-  readonly selectedModelRuntime: RuntimeSnapshot | undefined;
   readonly sessionCommands: readonly RuntimeCommandRecord[];
   readonly commandCompatibility: readonly ExtensionCommandCompatibilityRecord[];
   readonly selectedSessionKey: string;
@@ -79,7 +76,6 @@ interface UseSlashMenuParams {
   readonly allowTreeCommand?: boolean;
   readonly immediateCommandMode?: "submit" | "prefill";
   readonly onRunTreeCommand?: () => void;
-  readonly onSelectModelOption?: (provider: string, modelId: string) => void;
   readonly onSelectThinkingOption?: (level: string) => void;
   readonly onSelectLoginProvider?: (providerId: string) => void;
   readonly onSelectLogoutProvider?: (providerId: string) => void;
@@ -111,7 +107,6 @@ export function useSlashMenu(params: UseSlashMenuParams): SlashMenuState {
     composerDraft,
     setComposerDraft,
     selectedRuntime,
-    selectedModelRuntime,
     sessionCommands,
     commandCompatibility,
     selectedSessionKey,
@@ -126,7 +121,6 @@ export function useSlashMenu(params: UseSlashMenuParams): SlashMenuState {
     allowTreeCommand = true,
     immediateCommandMode = "submit",
     onRunTreeCommand,
-    onSelectModelOption,
     onSelectThinkingOption,
     onSelectLoginProvider,
     onSelectLogoutProvider,
@@ -164,31 +158,15 @@ export function useSlashMenu(params: UseSlashMenuParams): SlashMenuState {
   const selectedSlashCommand = showSlashMenu
     ? slashSuggestions[slashIndex % slashSuggestions.length]
     : undefined;
-  const slashOptions =
-    activeSlashOptionCommand?.kind === "model"
-      ? buildModelOptions(selectedModelRuntime)
-      : slashOptionsForCommand(activeSlashOptionCommand, selectedRuntime);
+  const slashOptions = slashOptionsForCommand(activeSlashOptionCommand, selectedRuntime);
   const activeSlashOptionEmptyState = slashOptionEmptyState(
     activeSlashOptionCommand,
-    activeSlashOptionCommand?.kind === "model" ? undefined : selectedRuntime,
+    selectedRuntime,
   );
-  const modelSlashEmptyState =
-    activeSlashOptionCommand?.kind === "model" && slashOptions.length === 0
-      ? (() => {
-          const state = deriveModelOnboardingState(selectedModelRuntime, {
-            provider: undefined,
-            modelId: undefined,
-          });
-          return {
-            title: state.emptyModelTitle,
-            description: state.emptyModelDescription,
-          };
-        })()
-      : undefined;
   const showSlashOptionMenu =
     !isRunning &&
     Boolean(activeSlashOptionCommand) &&
-    (slashOptions.length > 0 || Boolean(modelSlashEmptyState ?? activeSlashOptionEmptyState));
+    (slashOptions.length > 0 || Boolean(activeSlashOptionEmptyState));
   const selectedSlashOption = showSlashOptionMenu
     ? slashOptions[slashOptionIndex % slashOptions.length]
     : undefined;
@@ -334,35 +312,6 @@ export function useSlashMenu(params: UseSlashMenuParams): SlashMenuState {
       return;
     }
 
-    if (activeSlashOptionCommand.kind === "model") {
-      const modelOption = option as Extract<ComposerSlashOption, { value: string }> & {
-        providerId?: string;
-      };
-      const providerId = modelOption.providerId;
-      if (!providerId) {
-        return;
-      }
-      resetSlashUi();
-      setComposerDraft("");
-      if (onSelectModelOption) {
-        onSelectModelOption(providerId, option.value);
-        return;
-      }
-      if (!selectedWorkspace || !selectedSession || !api) {
-        return;
-      }
-      const target = { workspaceId: selectedWorkspace.id, sessionId: selectedSession.id };
-      // The pick consumed the command text: save the cleared draft now rather than after the
-      // debounce, so quitting right away cannot bring "/model" back.
-      void updateSnapshot(setSnapshot, async () => {
-        await api.updateComposerDraft("", target);
-        return api.setSessionModel(target.workspaceId, target.sessionId, providerId, option.value);
-      }).catch((error: unknown) => {
-        console.error("[renderer] updateSnapshot failed", error);
-      });
-      return;
-    }
-
     if (activeSlashOptionCommand.kind === "thinking") {
       resetSlashUi();
       setComposerDraft("");
@@ -492,7 +441,7 @@ export function useSlashMenu(params: UseSlashMenuParams): SlashMenuState {
     selectedSlashCommand,
     selectedSlashOption,
     slashOptions,
-    slashOptionEmptyState: modelSlashEmptyState ?? activeSlashOptionEmptyState,
+    slashOptionEmptyState: activeSlashOptionEmptyState,
     activeSlashFlow,
     activeSlashOptionCommand,
     resetSlashUi,

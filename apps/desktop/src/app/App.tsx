@@ -186,23 +186,9 @@ export default function App() {
   const selectedWorktree = selectedWorkspace
     ? linkedWorktreeByWorkspaceId.get(selectedWorkspace.id)
     : undefined;
-  const selectedModelOptions = buildModelOptions(selectedModelRuntime);
-  const selectedDefaultEnabled = selectedModelOptions.some(
-    (m) =>
-      m.providerId === selectedModelRuntime?.settings.defaultProvider &&
-      m.modelId === selectedModelRuntime?.settings.defaultModelId,
-  );
-  const resolvedSessionProvider =
-    selectedSession?.config?.provider ??
-    (selectedDefaultEnabled ? selectedModelRuntime?.settings.defaultProvider : undefined);
-  const resolvedSessionModelId =
-    selectedSession?.config?.modelId ??
-    (selectedDefaultEnabled ? selectedModelRuntime?.settings.defaultModelId : undefined);
-  const resolvedSessionThinkingLevel =
-    selectedSession?.config?.thinkingLevel ?? selectedModelRuntime?.settings.defaultThinkingLevel;
   const selectedSessionModelOnboarding = deriveModelOnboardingState(selectedModelRuntime, {
-    provider: resolvedSessionProvider,
-    modelId: resolvedSessionModelId,
+    provider: selectedSession?.config?.provider,
+    modelId: selectedSession?.config?.modelId,
   });
   const queuedComposerMessages = snapshot?.queuedComposerMessages ?? [];
   const editingQueuedMessageId = snapshot?.editingQueuedMessageId;
@@ -503,7 +489,6 @@ export default function App() {
     composerDraft,
     setComposerDraft,
     selectedRuntime,
-    selectedModelRuntime,
     sessionCommands: selectedSessionCommands,
     commandCompatibility: selectedWorkspaceCommandCompatibility,
     selectedSessionKey,
@@ -702,9 +687,7 @@ export default function App() {
     setSnapshot,
     hasWorkspace: rootWorkspaceOptions.length > 0,
     selectedRootWorkspaceId,
-    selectedThread: selectedThreadActions
-      ? { actions: selectedThreadActions, canSwitchModel: selectedModelOptions.length > 0 }
-      : undefined,
+    selectedThread: selectedThreadActions ? { actions: selectedThreadActions } : undefined,
     threadSidebarModel,
     threadShortcutOrderRef,
     selectThread: (target) => selectThreadRef.current(target),
@@ -771,17 +754,6 @@ export default function App() {
   ]
     .filter(Boolean)
     .join(" ");
-  const handleSetSessionModel = (provider: string, modelId: string) => {
-    if (!selectedWorkspace || !selectedSession) {
-      return;
-    }
-    void updateSnapshot(setSnapshot, () =>
-      api.setSessionModel(selectedWorkspace.id, selectedSession.id, provider, modelId),
-    ).catch((error: unknown) => {
-      console.error("[renderer] updateSnapshot failed", error);
-    });
-  };
-
   const handleSetSessionThinking = (level: string) => {
     if (!selectedWorkspace || !selectedSession) {
       return;
@@ -905,15 +877,6 @@ export default function App() {
               }
             : undefined
         }
-        modelScope={
-          selectedThreadTarget
-            ? {
-                options: selectedModelOptions,
-                currentProvider: resolvedSessionProvider,
-                currentModelId: resolvedSessionModelId,
-              }
-            : undefined
-        }
         onOpenThread={handleSelectSession}
         onOpenWorkspace={wsMenu.selectWorkspace}
         onOpenFile={(path) => {
@@ -924,7 +887,6 @@ export default function App() {
               console.error("[renderer] open file from palette failed", error);
             });
         }}
-        onSelectModel={handleSetSessionModel}
       />
     ) : null;
 
@@ -1086,9 +1048,6 @@ export default function App() {
                 prompt={newThread.prompt}
                 attachments={newThread.attachments}
                 lastError={newThread.composerError}
-                provider={newThread.resolvedProvider}
-                modelId={newThread.resolvedModelId}
-                thinkingLevel={newThread.resolvedThinkingLevel}
                 modelOnboarding={newThread.modelOnboarding}
                 composerRef={newThread.composerRef}
                 activeSlashCommand={newThread.slashMenu.activeSlashFlow?.command}
@@ -1109,11 +1068,6 @@ export default function App() {
                 onChangePrompt={newThread.setPrompt}
                 onSelectEnvironment={newThread.setEnvironment}
                 onSelectWorkspace={newThread.selectWorkspace}
-                onSetModel={(provider, modelId) => {
-                  newThread.setProvider(provider);
-                  newThread.setModelId(modelId);
-                }}
-                onSetThinking={newThread.setThinkingLevel}
                 extensionFlags={newThread.extensionFlags}
                 onSetExtensionFlag={newThread.setExtensionFlag}
                 onOpenModelSettings={(section) => openSettings(newThread.workspace?.id, section)}
@@ -1213,9 +1167,6 @@ export default function App() {
                     : undefined
                 }
                 extensionFlags={snapshot.extensionFlagsBySession[selectedSessionKey]}
-                provider={resolvedSessionProvider}
-                modelId={resolvedSessionModelId}
-                thinkingLevel={resolvedSessionThinkingLevel}
                 onClearSlashCommand={slashMenu.resetSlashUi}
                 onComposerKeyDown={handleComposerKeyDown}
                 onComposerPaste={handleComposerPaste}
@@ -1232,8 +1183,6 @@ export default function App() {
                 onSelectSlashOption={(option) => {
                   slashMenu.applySlashOptionSelection(option);
                 }}
-                onSetModel={handleSetSessionModel}
-                onSetThinking={handleSetSessionThinking}
                 modelOnboarding={selectedSessionModelOnboarding}
                 onOpenModelSettings={(section) =>
                   openSettings(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id, section)

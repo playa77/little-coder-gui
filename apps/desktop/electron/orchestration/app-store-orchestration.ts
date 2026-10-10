@@ -4,7 +4,6 @@ import { promisify } from "node:util";
 import type { AgentToolResult } from "@earendil-works/pi-coding-agent";
 import { sessionKey } from "@pi-gui/session-driver";
 import type {
-  CreateSessionOptions,
   SessionConfig,
   SessionDriverEvent,
   SessionRef,
@@ -90,7 +89,6 @@ interface OrchestrationOwnerHost {
     listener: (event: SessionDriverEvent, state: DesktopAppState) => void | Promise<void>,
   ): () => void;
   updateSessionConfig(sessionRef: SessionRef, config: SessionConfig | undefined): void;
-  buildCreateSessionOptions(workspaceId: string): Promise<CreateSessionOptions | undefined>;
   getQueuedComposerMessages(
     sessionRef: SessionRef,
   ): readonly import("../../contracts/desktop-state").QueuedComposerMessage[];
@@ -225,9 +223,7 @@ async function createChildThreadRecord(
     pendingCreateChildThreadToolCalls.add(pendingKey);
   }
   try {
-    const createOptions = await store.buildCreateSessionOptions(input.parentWorkspaceId);
     const session = await store.driver.createSession(workspace, {
-      ...createOptions,
       title: titleFromPrompt(prompt),
     });
     const childRef = session.ref;

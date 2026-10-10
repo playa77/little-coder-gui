@@ -297,9 +297,6 @@ export type StartThreadInput = {
   readonly environment: NewThreadEnvironment;
   readonly prompt?: string;
   readonly attachments?: readonly ComposerAttachment[];
-  readonly provider?: string;
-  readonly modelId?: string;
-  readonly thinkingLevel?: string;
   /**
    * The flag values chosen for this thread, `false` and empty strings included so
    * they are remembered as the workspace's next defaults. Main checks them against

@@ -10,7 +10,6 @@ import {
   ExtensionIcon,
   FileIcon,
   FolderIcon,
-  ModelIcon,
   PlusIcon,
   SearchIcon,
   SettingsIcon,
@@ -19,7 +18,7 @@ import {
   SkillIcon,
 } from "../../ui/icons";
 
-export type PaletteMode = "commands" | "files" | "models";
+export type PaletteMode = "commands" | "files";
 
 export interface PaletteAction {
   readonly id: string;
@@ -47,7 +46,6 @@ export interface PaletteActionContext {
   readonly hasWorkspace: boolean;
   /** A thread is open in the main pane, with the actions its menus show. */
   readonly thread?: {
-    readonly canSwitchModel: boolean;
     readonly actions: readonly ThreadAction[];
   };
   readonly canToggleSidebar: boolean;
@@ -107,15 +105,6 @@ export function buildPaletteActions(context: PaletteActionContext): readonly Pal
         run: context.findInThread,
       },
     );
-    if (thread.canSwitchModel) {
-      actions.push({
-        id: "switch-model",
-        title: "Switch model…",
-        icon: <ModelIcon />,
-        keepsOpen: true,
-        run: () => context.openPaletteMode("models"),
-      });
-    }
     for (const { kind, label, Icon, shortcutKey } of BUILTIN_TOOL_ENTRIES) {
       actions.push({
         id: `toggle-${kind}`,

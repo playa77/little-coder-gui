@@ -1,0 +1,68 @@
+2026-10-10T12:05:01.304Z stage: importing pi
+2026-10-10T12:05:01.772Z stage: pi imported (156 exports)
+2026-10-10T12:05:01.772Z stage: importing write-guard TS
+2026-10-10T12:05:01.806Z stage: write-guard imported, default=function
+2026-10-10T12:05:01.806Z stage: spawning fake server
+2026-10-10T12:05:01.854Z stage: fake server on :8901
+2026-10-10T12:05:01.854Z stage: workspace prepared
+2026-10-10T12:05:01.859Z stage: provider registered
+2026-10-10T12:05:01.860Z stage: model resolved=llamacpp/Qwen3.5-9B
+2026-10-10T12:05:01.860Z stage: loader constructed; reloading
+2026-10-10T12:05:01.866Z stage: loader reloaded
+2026-10-10T12:05:01.870Z stage: session created
+2026-10-10T12:05:01.870Z stage: prompting
+2026-10-10T12:06:04.013Z stage: prompt settled, events=52
+2026-10-10T12:06:04.013Z agent_start
+2026-10-10T12:06:04.013Z turn_start
+2026-10-10T12:06:04.013Z message_start role=system
+2026-10-10T12:06:04.013Z message_end
+2026-10-10T12:06:04.013Z message_start role=user
+2026-10-10T12:06:04.013Z message_end
+2026-10-10T12:06:04.013Z message_start role=assistant
+2026-10-10T12:06:04.013Z message_end
+2026-10-10T12:06:04.013Z turn_end
+2026-10-10T12:06:04.013Z agent_end
+2026-10-10T12:06:04.013Z auto_retry_start
+2026-10-10T12:06:04.013Z entry_appended
+2026-10-10T12:06:04.013Z agent_start
+2026-10-10T12:06:04.013Z turn_start
+2026-10-10T12:06:04.013Z message_start role=assistant
+2026-10-10T12:06:04.013Z message_end
+2026-10-10T12:06:04.013Z turn_end
+2026-10-10T12:06:04.013Z agent_end
+2026-10-10T12:06:04.013Z auto_retry_start
+2026-10-10T12:06:04.013Z entry_appended
+2026-10-10T12:06:04.013Z agent_start
+2026-10-10T12:06:04.013Z turn_start
+2026-10-10T12:06:04.013Z message_start role=assistant
+2026-10-10T12:06:04.013Z message_end
+2026-10-10T12:06:04.013Z turn_end
+2026-10-10T12:06:04.013Z agent_end
+2026-10-10T12:06:04.013Z auto_retry_start
+2026-10-10T12:06:04.013Z entry_appended
+2026-10-10T12:06:04.013Z agent_start
+2026-10-10T12:06:04.013Z turn_start
+2026-10-10T12:06:04.013Z message_start role=assistant
+2026-10-10T12:06:04.013Z message_end
+2026-10-10T12:06:04.013Z turn_end
+2026-10-10T12:06:04.013Z agent_end
+2026-10-10T12:06:04.013Z auto_retry_start
+2026-10-10T12:06:04.013Z entry_appended
+2026-10-10T12:06:04.013Z agent_start
+2026-10-10T12:06:04.013Z turn_start
+2026-10-10T12:06:04.013Z message_start role=assistant
+2026-10-10T12:06:04.013Z message_end
+2026-10-10T12:06:04.013Z turn_end
+2026-10-10T12:06:04.013Z agent_end
+2026-10-10T12:06:04.013Z auto_retry_start
+2026-10-10T12:06:04.013Z entry_appended
+2026-10-10T12:06:04.013Z agent_start
+2026-10-10T12:06:04.013Z turn_start
+2026-10-10T12:06:04.013Z message_start role=assistant
+2026-10-10T12:06:04.013Z message_end
+2026-10-10T12:06:04.013Z turn_end
+2026-10-10T12:06:04.013Z agent_end
+2026-10-10T12:06:04.013Z auto_retry_end
+2026-10-10T12:06:04.013Z agent_settled
+2026-10-10T12:06:04.013Z stage: final — intact=true verdict=PASS
+2026-10-10T12:06:04.013Z process exit 0

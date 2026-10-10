@@ -28,7 +28,6 @@ export type {
   SessionId,
   SessionMessageDeliveryMode,
   SessionMessageInput,
-  SessionModelSelection,
   SessionOpenedEvent,
   SessionQueuedMessage,
   SessionRef,

@@ -98,7 +98,6 @@ function createHost(
     seedSession: (_snapshot: SessionSnapshot) => undefined,
     ensureSessionSubscription: async () => undefined,
     ensureSessionReady: async () => undefined,
-    buildCreateSessionOptions: async () => ({}),
     updateComposerDraft: async () => snapshotFrom(host),
     deliverBackgroundInstruction: async (ref, text) => {
       host.deliverCalls.push({ sessionRef: ref, text });

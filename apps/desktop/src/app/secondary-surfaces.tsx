@@ -112,17 +112,6 @@ export function SecondarySurfaces({
     });
   }, [activeView, refreshNotificationPermissionStatus, settingsSection]);
 
-  const handleSetDefaultModel = (provider: string, modelId: string) => {
-    if (!settingsWorkspace) {
-      return;
-    }
-    void updateSnapshot(setSnapshot, () =>
-      api.setDefaultModel(settingsWorkspace.id, provider, modelId),
-    ).catch((error: unknown) => {
-      console.error("[renderer] setDefaultModel failed", error);
-    });
-  };
-
   const handleSetThinkingLevel = (
     thinkingLevel: RuntimeSnapshot["settings"]["defaultThinkingLevel"],
   ) => {
@@ -459,7 +448,6 @@ export function SecondarySurfaces({
           onSaveCustomProvider={handleSaveCustomProvider}
           onDeleteCustomProvider={handleDeleteCustomProvider}
           onSetModelSettingsScopeMode={handleSetModelSettingsScopeMode}
-          onSetDefaultModel={handleSetDefaultModel}
           onSetNotificationPreferences={handleSetNotificationPreferences}
           onSetIntegratedTerminalShell={handleSetIntegratedTerminalShell}
           onRequestNotificationPermission={handleRequestNotificationPermission}

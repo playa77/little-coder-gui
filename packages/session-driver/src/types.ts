@@ -119,11 +119,6 @@ export interface NavigateSessionTreeResult {
   readonly summaryCreated?: boolean;
 }
 
-export interface SessionModelSelection {
-  readonly provider: string;
-  readonly modelId: string;
-}
-
 export interface SessionMessageInput {
   readonly text: string;
   readonly attachments?: readonly SessionAttachment[];
@@ -137,8 +132,6 @@ export interface SessionMessageInput {
 
 export interface CreateSessionOptions {
   readonly title?: string;
-  readonly initialModel?: SessionModelSelection;
-  readonly initialThinkingLevel?: string;
   /** Values for flags the session's extensions registered, applied when pi loads them. */
   readonly extensionFlagValues?: ExtensionFlagValues;
 }
@@ -398,7 +391,6 @@ export interface SessionDriver {
     messages: readonly SessionQueuedMessage[],
   ): Promise<void>;
   cancelCurrentRun(sessionRef: SessionRef): Promise<void>;
-  setSessionModel(sessionRef: SessionRef, selection: SessionModelSelection): Promise<void>;
   setSessionThinkingLevel(sessionRef: SessionRef, thinkingLevel: string): Promise<void>;
   renameSession(sessionRef: SessionRef, title: string): Promise<void>;
   compactSession(sessionRef: SessionRef, customInstructions?: string): Promise<void>;

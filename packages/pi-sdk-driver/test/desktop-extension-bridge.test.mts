@@ -72,6 +72,8 @@ export default function extension(pi) {
     const driver = new PiSdkDriver({
       agentDir,
       catalogFilePath: join(root, "catalogs.json"),
+      // WP-002: no endpoint probe here; the fetch mock asserts zero network use.
+      fixedModelRuntimeOptions: { probeContextWindow: false },
       builtinExtensions: [
         {
           name: "external",
@@ -92,10 +94,7 @@ export default function extension(pi) {
         },
       },
     });
-    const { ref } = await driver.createSession(
-      { workspaceId: "bridge-workspace", path: cwd },
-      { initialModel: { provider: "bridge-test", modelId: "scripted" } },
-    );
+    const { ref } = await driver.createSession({ workspaceId: "bridge-workspace", path: cwd });
     t.after(() => driver.closeSession(ref));
     assert.equal(externalFactoryCalls, 1, "bootstrap preserves other internal factories");
     assert.equal(changed.length, 1);

@@ -121,7 +121,6 @@ type ConversationOwner = Pick<
   | "getSessionTree"
   | "navigateSessionTree"
   | "respondToHostUiRequest"
-  | "setSessionModel"
   | "setSessionThinkingLevel"
   | "withError"
 >;
@@ -143,7 +142,6 @@ type SettingsOwner = Pick<
   DesktopAppStore,
   | "refreshRuntime"
   | "setModelSettingsScopeMode"
-  | "setDefaultModel"
   | "setDefaultThinkingLevel"
   | "loginProvider"
   | "logoutProvider"
@@ -425,37 +423,6 @@ export function registerDesktopIpc({
     const mode = expectModelSettingsScopeMode(rawMode);
     return run(event, () => owners.settings.setModelSettingsScopeMode(mode));
   });
-  ipcMain.handle(
-    desktopIpc.setSessionModel,
-    (
-      event,
-      rawWorkspaceId: unknown,
-      rawSessionId: unknown,
-      rawProvider: unknown,
-      rawModel: unknown,
-    ) =>
-      run(event, () =>
-        owners.conversation.setSessionModel(
-          {
-            workspaceId: expectNonEmptyString(rawWorkspaceId, "workspaceId"),
-            sessionId: expectNonEmptyString(rawSessionId, "sessionId"),
-          },
-          expectNonEmptyString(rawProvider, "provider"),
-          expectNonEmptyString(rawModel, "modelId"),
-        ),
-      ),
-  );
-  ipcMain.handle(
-    desktopIpc.setDefaultModel,
-    (event, rawWorkspaceId: unknown, rawProvider: unknown, rawModel: unknown) =>
-      run(event, () =>
-        owners.settings.setDefaultModel(
-          expectNonEmptyString(rawWorkspaceId, "workspaceId"),
-          expectNonEmptyString(rawProvider, "provider"),
-          expectNonEmptyString(rawModel, "modelId"),
-        ),
-      ),
-  );
   ipcMain.handle(
     desktopIpc.setDefaultThinkingLevel,
     (event, rawWorkspaceId: unknown, thinkingLevel: unknown) =>

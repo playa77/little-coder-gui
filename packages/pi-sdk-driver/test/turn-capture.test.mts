@@ -156,6 +156,10 @@ async function fixture(
     ...options.driver,
     agentDir,
     catalogFilePath: join(root, "catalogs.json"),
+    // WP-002: the driver always resolves llamacpp:Qwen3.5-9B; the scripted
+    // stream function below stands in for that model's provider, so no probe
+    // may contact the (unreachable) endpoint here.
+    fixedModelRuntimeOptions: { probeContextWindow: false },
     onTurnCaptureBoundary: async (event, signal) => {
       boundaries.push({ event: structuredClone(event), signal, content: await fileContent() });
       pulse();
@@ -181,10 +185,7 @@ async function fixture(
       return runtime;
     },
   });
-  const { ref } = await driver.createSession(
-    { workspaceId: "capture-workspace", path: cwd },
-    { initialModel: { provider: "capture-test", modelId: "scripted" } },
-  );
+  const { ref } = await driver.createSession({ workspaceId: "capture-workspace", path: cwd });
   const unsubscribe = driver.subscribe(ref, (event) => {
     events.push(event);
     pulse();

@@ -1,11 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { AgentToolResult } from "@earendil-works/pi-coding-agent";
-import type {
-  CreateSessionOptions,
-  SessionRef,
-  SessionSnapshot,
-  WorkspaceRef,
-} from "@pi-gui/session-driver";
+import type { SessionRef, SessionSnapshot, WorkspaceRef } from "@pi-gui/session-driver";
 import type { PiSdkDriver } from "@pi-gui/pi-sdk-driver";
 import {
   MAX_SCHEDULED_TASK_RUNS,
@@ -58,7 +53,6 @@ export interface ScheduledTaskOwnerHost {
   seedSession(snapshot: SessionSnapshot): void;
   ensureSessionSubscription(sessionRef: SessionRef): Promise<void>;
   ensureSessionReady(sessionRef: SessionRef): Promise<SessionSnapshot | undefined>;
-  buildCreateSessionOptions(workspaceId: string): Promise<CreateSessionOptions | undefined>;
   updateComposerDraft(sessionRef: SessionRef, draft: string): Promise<DesktopAppState>;
   deliverBackgroundInstruction(sessionRef: SessionRef, text: string): Promise<string | undefined>;
   transcriptFor(sessionRef: SessionRef): readonly TranscriptMessage[];
@@ -467,9 +461,7 @@ async function createBackgroundSession(
   if (!workspace) {
     throw new Error(`Unknown workspace: ${workspaceId}`);
   }
-  const createOptions = (await store.buildCreateSessionOptions(workspaceId)) ?? {};
   const session = await store.driver.createSession(workspace, {
-    ...createOptions,
     title,
   });
   store.seedSession(session);

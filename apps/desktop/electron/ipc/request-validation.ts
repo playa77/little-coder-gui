@@ -244,9 +244,6 @@ export function expectStartThreadInput(value: unknown): StartThreadInput {
       record.attachments === undefined
         ? undefined
         : expectComposerAttachments(record.attachments, "input.attachments"),
-    provider: expectOptionalNonEmptyString(record.provider, "input.provider"),
-    modelId: expectOptionalNonEmptyString(record.modelId, "input.modelId"),
-    thinkingLevel: expectOptionalString(record.thinkingLevel, "input.thinkingLevel"),
     extensionFlags:
       record.extensionFlags === undefined
         ? undefined

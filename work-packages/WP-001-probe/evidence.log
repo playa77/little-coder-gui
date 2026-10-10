@@ -1,0 +1,10 @@
+importing pi
+importing write-guard
+spawning fake server (log mode)
+fake server on :8901
+model=llamacpp/Qwen3.5-9B
+loader reloaded
+session created
+prompting
+prompt settled
+final intact=true verdict=PASS
