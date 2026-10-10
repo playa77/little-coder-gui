@@ -157,9 +157,7 @@ export const desktopIpc = {
   setWorkspaceCollapsed: "pi-gui:set-workspace-collapsed",
   refreshRuntime: "pi-gui:refresh-runtime",
   setModelSettingsScopeMode: "pi-gui:set-model-settings-scope-mode",
-  setDefaultModel: "pi-gui:set-default-model",
   setDefaultThinkingLevel: "pi-gui:set-default-thinking-level",
-  setSessionModel: "pi-gui:set-session-model",
   setSessionThinkingLevel: "pi-gui:set-session-thinking-level",
   loginProvider: "pi-gui:login-provider",
   logoutProvider: "pi-gui:logout-provider",
@@ -739,16 +737,9 @@ export interface PiDesktopApi {
   setWorkspaceCollapsed(workspaceId: string, collapsed: boolean): Promise<DesktopAppState>;
   refreshRuntime(workspaceId?: string): Promise<DesktopAppState>;
   setModelSettingsScopeMode(mode: ModelSettingsScopeMode): Promise<DesktopAppState>;
-  setDefaultModel(workspaceId: string, provider: string, modelId: string): Promise<DesktopAppState>;
   setDefaultThinkingLevel(
     workspaceId: string,
     thinkingLevel: RuntimeSettingsSnapshot["defaultThinkingLevel"],
-  ): Promise<DesktopAppState>;
-  setSessionModel(
-    workspaceId: string,
-    sessionId: string,
-    provider: string,
-    modelId: string,
   ): Promise<DesktopAppState>;
   setSessionThinkingLevel(
     workspaceId: string,

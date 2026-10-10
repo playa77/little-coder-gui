@@ -53,9 +53,6 @@ interface ComposerPanelProps {
   readonly attachments: readonly ComposerAttachment[];
   readonly queuedMessages: readonly QueuedComposerMessage[];
   readonly editingQueuedMessageId?: string;
-  readonly provider: string | undefined;
-  readonly modelId: string | undefined;
-  readonly thinkingLevel: string | undefined;
   readonly slashSections: readonly ComposerSlashCommandSection[];
   readonly slashOptions: readonly ComposerSlashOption[];
   readonly selectedSlashCommand?: ComposerSlashCommand;
@@ -75,8 +72,6 @@ interface ComposerPanelProps {
   readonly onSteerQueuedMessage: (messageId: string) => void;
   readonly onSelectSlashCommand: (command: ComposerSlashCommand) => void;
   readonly onSelectSlashOption: (option: ComposerSlashOption) => void;
-  readonly onSetModel: (provider: string, modelId: string) => void;
-  readonly onSetThinking: (level: string) => void;
   readonly modelOnboarding: ModelOnboardingState;
   readonly onOpenModelSettings: (section: ModelOnboardingSettingsSection) => void;
   readonly onSubmit: () => void;
@@ -112,9 +107,6 @@ export function ComposerPanel({
   attachments,
   queuedMessages,
   editingQueuedMessageId,
-  provider,
-  modelId,
-  thinkingLevel,
   slashSections,
   slashOptions,
   selectedSlashCommand,
@@ -134,8 +126,6 @@ export function ComposerPanel({
   onSteerQueuedMessage,
   onSelectSlashCommand,
   onSelectSlashOption,
-  onSetModel,
-  onSetThinking,
   modelOnboarding,
   onOpenModelSettings,
   onSubmit,
@@ -215,17 +205,7 @@ export function ComposerPanel({
             <div className="composer__footer">
               <div className="composer__footer-row">
                 <div className="composer__config">
-                  <ModelSelector
-                    runtime={runtime}
-                    provider={provider}
-                    modelId={modelId}
-                    thinkingLevel={thinkingLevel}
-                    disabled={selectedSession.status === "running"}
-                    unselectedModelLabel={modelOnboarding.unselectedModelLabel}
-                    emptyModelTitle={modelOnboarding.emptyModelTitle}
-                    onSetModel={onSetModel}
-                    onSetThinking={onSetThinking}
-                  />
+                  <ModelSelector runtime={runtime} />
                   <ExtensionFlagsBadge values={extensionFlags} />
                   <ContextMeter usage={usage} />
                 </div>

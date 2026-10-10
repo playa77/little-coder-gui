@@ -168,25 +168,6 @@ export function parseComposerCommand(value: string): ParsedComposerCommand | und
     return { type: "thinking", thinkingLevel };
   }
 
-  if (command === "/model") {
-    if (rest.length >= 2) {
-      return {
-        type: "model",
-        provider: rest[0] ?? "",
-        modelId: rest.slice(1).join(" "),
-      };
-    }
-
-    const combined = rest[0];
-    if (combined?.includes(":")) {
-      const [provider, ...modelParts] = combined.split(":");
-      const modelId = modelParts.join(":");
-      if (provider && modelId) {
-        return { type: "model", provider, modelId };
-      }
-    }
-  }
-
   return undefined;
 }
 

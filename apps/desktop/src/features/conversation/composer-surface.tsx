@@ -554,8 +554,6 @@ function SlashCommandIcon({ command }: { readonly command: ComposerSlashCommand 
   switch (command.kind) {
     case "runtime":
       return command.runtimeCommand?.source === "skill" ? <SkillIcon /> : <SparkIcon />;
-    case "model":
-      return <ModelIcon />;
     case "thinking":
       return <ReasoningIcon />;
     case "status":

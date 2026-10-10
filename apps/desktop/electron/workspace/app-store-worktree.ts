@@ -135,21 +135,10 @@ export async function startThread(
     const prompt = input.prompt?.trim() ?? "";
     const attachments = input.attachments ?? [];
     let session: Awaited<ReturnType<typeof store.driver.createSession>>;
-    let initialModel: { provider: string; modelId: string } | undefined;
-    let initialThinkingLevel: string | undefined;
     try {
-      const createOptions =
-        (await store.buildCreateSessionOptions(targetWorkspace.workspaceId)) ?? {};
-      initialModel =
-        input.provider && input.modelId
-          ? { provider: input.provider, modelId: input.modelId }
-          : createOptions.initialModel;
-      initialThinkingLevel = input.thinkingLevel ?? createOptions.initialThinkingLevel;
+      // WP-002: no model/thinking options — the driver resolves the fixed pair.
       session = await store.driver.createSession(targetWorkspace, {
-        ...createOptions,
         title: NEW_THREAD_PLACEHOLDER_TITLE,
-        ...(initialModel ? { initialModel } : {}),
-        ...(initialThinkingLevel ? { initialThinkingLevel } : {}),
         extensionFlagValues: extensionFlags.applied,
       });
     } catch (error) {
@@ -206,8 +195,6 @@ export async function startThread(
         prompt,
         requestToken: pendingAutoTitle.requestToken,
         signal: autoTitleAbortController.signal,
-        ...(initialModel ? { model: initialModel } : {}),
-        ...(initialThinkingLevel ? { thinkingLevel: initialThinkingLevel } : {}),
       }).catch((error: unknown) => {
         console.error("[app-store-worktree] generateAndApplyAutoTitle failed", error);
       });

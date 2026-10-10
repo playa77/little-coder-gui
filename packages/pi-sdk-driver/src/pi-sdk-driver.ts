@@ -16,7 +16,6 @@ import type {
   HostUiResponse,
   SessionDriver,
   SessionEventListener,
-  SessionModelSelection,
   SessionRef,
   SessionSnapshot,
   SessionMessageInput,
@@ -51,7 +50,13 @@ export class PiSdkDriver implements SessionDriver {
     this.generateThreadTitleOverride = options.generateThreadTitleOverride;
 
     this.supervisor = new SessionSupervisor({ ...options, agentDir: deps.agentDir });
-    this.runtimeSupervisor = new RuntimeSupervisor({ ...options, ...deps });
+    this.runtimeSupervisor = new RuntimeSupervisor({
+      ...options,
+      ...deps,
+      ...(options.fixedModelRuntimeOptions
+        ? { fixedModelRuntimeOptions: options.fixedModelRuntimeOptions }
+        : {}),
+    });
   }
 
   createSession(workspace: WorkspaceRef, options?: CreateSessionOptions): Promise<SessionSnapshot> {
@@ -93,9 +98,9 @@ export class PiSdkDriver implements SessionDriver {
     return this.supervisor.cancelCurrentRun(sessionRef);
   }
 
-  setSessionModel(sessionRef: SessionRef, selection: SessionModelSelection): Promise<void> {
-    return this.supervisor.setSessionModel(sessionRef, selection);
-  }
+  // WP-002 removes setSessionModel entirely: the driver owns a single
+  // registered provider/model and the renderer cannot express another choice
+  // (SessionDriver keeps the method for type-compat; see session-driver types).
 
   setSessionThinkingLevel(sessionRef: SessionRef, thinkingLevel: string): Promise<void> {
     return this.supervisor.setSessionThinkingLevel(sessionRef, thinkingLevel);

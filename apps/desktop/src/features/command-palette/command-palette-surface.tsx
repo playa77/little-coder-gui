@@ -12,7 +12,6 @@ import type { PaletteAction, PaletteMode } from "./palette-actions";
 import {
   buildCommandSections,
   buildFileSections,
-  buildListSection,
   COMMAND_FILTERS,
   FILE_RESULT_LIMIT,
   splitPath,
@@ -24,12 +23,6 @@ export interface PaletteFileScope {
   readonly workspaceId: string;
   readonly label: string;
   readonly openTabs: readonly string[];
-}
-
-export interface PaletteModelScope {
-  readonly options: readonly ComposerModelOption[];
-  readonly currentProvider?: string;
-  readonly currentModelId?: string;
 }
 
 /** Mount one per mode (key it by mode) so each list starts with an empty query. */
@@ -45,11 +38,9 @@ interface CommandPaletteSurfaceProps {
   readonly actions: readonly PaletteAction[];
   /** Present when a thread is open; Cmd-P searches its workspace. */
   readonly fileScope?: PaletteFileScope;
-  readonly modelScope?: PaletteModelScope;
   readonly onOpenThread: (target: WorkspaceSessionTarget) => void;
   readonly onOpenWorkspace: (workspaceId: string) => void;
   readonly onOpenFile: (path: string) => void;
-  readonly onSelectModel: (provider: string, modelId: string) => void;
 }
 
 type FileListing =
@@ -67,11 +58,9 @@ export function CommandPaletteSurface({
   currentThread,
   actions,
   fileScope,
-  modelScope,
   onOpenThread,
   onOpenWorkspace,
   onOpenFile,
-  onSelectModel,
 }: CommandPaletteSurfaceProps) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<CommandFilter>("all");
@@ -187,29 +176,6 @@ export function CommandPaletteSurface({
             : query.trim()
               ? "No matching files."
               : `Type to search ${(files?.length ?? 0).toLocaleString()} files.`;
-  } else if (mode === "models") {
-    label = "Switch model";
-    placeholder = "Switch model";
-    sections = buildListSection({
-      id: "models",
-      label: "Models",
-      query,
-      candidates: (modelScope?.options ?? []).map((option) => ({
-        id: `model:${option.providerId}/${option.modelId}`,
-        title: option.label,
-        icon: <ModelIcon />,
-        hint:
-          option.providerId === modelScope?.currentProvider &&
-          option.modelId === modelScope.currentModelId
-            ? "Current"
-            : undefined,
-        run: () => {
-          onClose();
-          onSelectModel(option.providerId, option.modelId);
-        },
-      })),
-    });
-    emptyText = modelScope?.options.length ? "No matching models." : "No models available.";
   } else {
     label = "Command palette";
     placeholder = "Search chats, workspaces and actions";
@@ -233,7 +199,6 @@ export function CommandPaletteSurface({
       query={query}
       sections={sections}
       settling={mode === "files" && query !== fileQuery}
-      onBack={mode === "models" ? () => onModeChange("commands") : undefined}
       onClose={onClose}
       onFilterChange={setFilter}
       onQueryChange={setQuery}

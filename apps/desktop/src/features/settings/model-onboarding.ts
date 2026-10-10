@@ -26,7 +26,7 @@ interface ModelSelectionInput {
 
 export function deriveModelOnboardingState(
   runtime: RuntimeSnapshot | undefined,
-  currentSelection: ModelSelectionInput,
+  currentSelection?: ModelSelectionInput,
 ): ModelOnboardingState {
   const selectableModels = buildModelOptions(runtime);
   const selectableSet = new Set(
@@ -41,7 +41,7 @@ export function deriveModelOnboardingState(
   };
   const hasDefaultModel = Boolean(settingsDefault.provider && settingsDefault.modelId);
   const defaultModelUsable = isUsableSelection(settingsDefault, selectableSet);
-  const hasCurrentSelection = Boolean(currentSelection.provider && currentSelection.modelId);
+  const hasCurrentSelection = Boolean(currentSelection?.provider && currentSelection.modelId);
   const currentSelectionUsable = isUsableSelection(currentSelection, selectableSet);
 
   if (!hasSelectableModels) {
@@ -138,11 +138,11 @@ export function deriveModelOnboardingState(
 }
 
 function isUsableSelection(
-  selection: ModelSelectionInput,
+  selection: ModelSelectionInput | undefined,
   selectableSet: ReadonlySet<string>,
 ): boolean {
   return Boolean(
-    selection.provider &&
+    selection?.provider &&
     selection.modelId &&
     selectableSet.has(`${selection.provider}:${selection.modelId}`),
   );

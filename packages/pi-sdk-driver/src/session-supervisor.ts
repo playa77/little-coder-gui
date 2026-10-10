@@ -35,7 +35,6 @@ import type {
   SessionConfig,
   SessionDriverEvent,
   SessionEventListener,
-  SessionModelSelection,
   SessionRef,
   SessionPlanLimits,
   SessionSnapshot,
@@ -119,6 +118,15 @@ import { createTurnCaptureExtension } from "./turn-capture.js";
 import { createTranscriptIdentityExtension } from "./transcript-identity.js";
 import { createPlanLimitsExtension, readSessionUsage } from "./session-usage.js";
 import {
+  createFixedModelExtension,
+  fixedModelRequiredMessage,
+  FIXED_MODEL_ID,
+  FIXED_PROVIDER_ID,
+  FIXED_THINKING_LEVEL,
+  requireFixedSessionModel,
+  type FixedModelRuntimeOptions,
+} from "./fixed-model.js";
+import {
   createDesktopExtensionBridge,
   type PiDesktopExtensionObserver,
 } from "./desktop-extension-bridge.js";
@@ -130,12 +138,22 @@ import {
 
 type RuntimeModel = NonNullable<ReturnType<ModelRuntime["getModel"]>>;
 
-function requireModel(modelRuntime: ModelRuntime, provider: string, modelId: string): RuntimeModel {
-  const model = modelRuntime.getModel(provider, modelId);
-  if (!model) {
-    throw new Error(`Unknown model ${provider}:${modelId}`);
-  }
-  return model;
+/**
+ * WP-002: the session-open resolver. Every session — create, fork, reopen —
+ * resolves through the fixed pair check first, and anything else fails session
+ * open rather than falling back (ROADMAP WP-002: "model resolver rejects
+ * anything else at session open").
+ */
+function fixedSessionModel(
+  modelRuntime: ModelRuntime,
+  provider: string | undefined,
+  modelId: string | undefined,
+): RuntimeModel {
+  return requireFixedSessionModel(
+    modelRuntime,
+    provider ?? FIXED_PROVIDER_ID,
+    modelId ?? FIXED_MODEL_ID,
+  );
 }
 
 /**
@@ -157,7 +175,7 @@ async function requireSessionModel(
     return model;
   }
   await modelRuntime.refresh({ allowNetwork: false });
-  return requireModel(modelRuntime, provider, modelId);
+  return fixedSessionModel(modelRuntime, provider, modelId);
 }
 
 export interface PiSdkDriverOptions {
@@ -187,6 +205,8 @@ export interface PiSdkDriverOptions {
     workspace: WorkspaceRef,
     options: import("./thread-title-generator.js").GenerateThreadTitleOptions,
   ) => Promise<string | null | undefined>;
+  /** Options for the fixed-model registration; tests disable the live endpoint probe here. */
+  readonly fixedModelRuntimeOptions?: FixedModelRuntimeOptions;
 }
 
 export interface SyncWorkspaceResult {
@@ -302,6 +322,7 @@ export class SessionSupervisor {
   private readonly extensionFlagValuesForSession: PiSdkDriverOptions["extensionFlagValuesForSession"];
   private readonly onTurnCaptureBoundary: PiSdkDriverOptions["onTurnCaptureBoundary"];
   private readonly turnCaptureTimeoutMs: number | undefined;
+  private readonly fixedModelRuntimeOptions: FixedModelRuntimeOptions | undefined;
   private readonly records = new Map<string, ManagedSessionRecord>();
   /** Latest plan limits a provider reported, shared by every session on that provider. */
   private readonly planLimitsByProvider = new Map<string, SessionPlanLimits>();
@@ -330,6 +351,7 @@ export class SessionSupervisor {
     this.extensionFlagValuesForSession = options.extensionFlagValuesForSession;
     this.onTurnCaptureBoundary = options.onTurnCaptureBoundary;
     this.turnCaptureTimeoutMs = options.turnCaptureTimeoutMs;
+    this.fixedModelRuntimeOptions = options.fixedModelRuntimeOptions;
     this.agentDir = options.agentDir;
   }
 
@@ -356,6 +378,11 @@ export class SessionSupervisor {
         extensionFactories: [
           ...this.piAddons,
           ...this.builtinExtensions,
+          {
+            name: "pi-gui-fixed-model",
+            hidden: true,
+            factory: createFixedModelExtension(this.fixedModelRuntimeOptions).factory,
+          },
           {
             name: "pi-gui-plan-limits",
             hidden: true,
@@ -710,26 +737,20 @@ export class SessionSupervisor {
   ): Promise<SessionSnapshot> {
     await this.registerWorkspaceRef(workspace);
 
-    const initialModel = options?.initialModel;
     const createOptions: PiCreateAgentSessionOptions = {
       ...this.baseCreateOptions(
         workspace,
         SessionManager.create(workspace.path),
         options?.extensionFlagValues,
       ),
-      ...(initialModel
-        ? {
-            resolveInitialModel: (modelRuntime: ModelRuntime) =>
-              requireModel(modelRuntime, initialModel.provider, initialModel.modelId),
-          }
-        : {}),
-      ...(options?.initialThinkingLevel
-        ? {
-            thinkingLevel: options.initialThinkingLevel as NonNullable<
-              CreateAgentSessionOptions["thinkingLevel"]
-            >,
-          }
-        : {}),
+      // WP-002: always resolve the fixed pair. `fixedSessionModel` throws when
+      // the runtime does not hold exactly llamacpp:Qwen3.5-9B, so a wrong
+      // models.json or a missing registration fails session open loudly.
+      resolveInitialModel: (modelRuntime: ModelRuntime) =>
+        fixedSessionModel(modelRuntime, FIXED_PROVIDER_ID, FIXED_MODEL_ID),
+      // TECHNICAL-SPEC §1: thinking level fixed at medium (upstream launcher
+      // convention); no session option can override it.
+      thinkingLevel: FIXED_THINKING_LEVEL,
     };
 
     const runtime = await this.createAgentSessionRuntimeImpl(createOptions);
@@ -849,25 +870,14 @@ export class SessionSupervisor {
     }
 
     const forkConfig = deriveSessionConfig(branchedManager);
-    const forkProvider = forkConfig?.provider;
-    const forkModelId = forkConfig?.modelId;
     const createOptions: PiCreateAgentSessionOptions = {
       ...this.baseCreateOptions(targetWorkspace, branchedManager, options.extensionFlagValues),
-      ...(forkProvider && forkModelId
-        ? {
-            // A model the source session used may not exist in the target
-            // workspace; fall back to the runtime default rather than failing.
-            resolveInitialModel: (modelRuntime: ModelRuntime) =>
-              modelRuntime.getModel(forkProvider, forkModelId),
-          }
-        : {}),
-      ...(forkConfig?.thinkingLevel
-        ? {
-            thinkingLevel: forkConfig.thinkingLevel as NonNullable<
-              CreateAgentSessionOptions["thinkingLevel"]
-            >,
-          }
-        : {}),
+      // WP-002: a fork keeps the product's single model; a source session that
+      // recorded something else is refused at open, not silently remapped.
+      resolveInitialModel: (modelRuntime: ModelRuntime) =>
+        fixedSessionModel(modelRuntime, forkConfig?.provider, forkConfig?.modelId),
+      // TECHNICAL-SPEC §1: thinking level pinned for forked sessions too.
+      thinkingLevel: FIXED_THINKING_LEVEL,
     };
 
     const runtime = await this.createAgentSessionRuntimeImpl(createOptions);
@@ -1354,51 +1364,16 @@ export class SessionSupervisor {
     this.whenIdle(record);
   }
 
-  async setSessionModel(sessionRef: SessionRef, selection: SessionModelSelection): Promise<void> {
-    const record = await this.ensureRecord(sessionRef);
-    const session = record.session;
-    if (!session) {
-      throw new Error(`Session ${sessionKey(record.ref)} is not active.`);
-    }
-
-    // The session's own runtime, not a shared one: it holds this workspace's
-    // extension providers, so the endpoint and credentials resolved here are the
-    // ones this workspace registered even if another workspace claims the id.
-    const model = await requireSessionModel(
-      session.modelRuntime,
-      selection.provider,
-      selection.modelId,
-    );
-    const registry = new ModelRegistry(session.modelRuntime);
-    const auth = await registry.getApiKeyAndHeaders(model);
-    if (!auth.ok) {
-      throw new Error(auth.error);
-    }
-
-    const previousModel = session.model;
-    const previousThinkingLevel = session.supportsThinking()
-      ? session.thinkingLevel
-      : (session.settingsManager.getDefaultThinkingLevel() ?? DEFAULT_SESSION_THINKING_LEVEL);
-
-    session.agent.state.model = model;
-    session.sessionManager.appendModelChange(model.provider, model.id);
-    this.applySessionThinkingLevel(session, previousThinkingLevel);
-    await this.emitModelSelection(session, model, previousModel);
-    forcePersistPiSession(session.sessionManager);
-    record.config = deriveSessionConfig(session.sessionManager);
-    this.refreshUsage(record);
-    await this.persistSnapshot(record);
-    await this.emit(record, sessionUpdatedEvent(record));
-  }
-
   async setSessionThinkingLevel(sessionRef: SessionRef, thinkingLevel: string): Promise<void> {
-    const record = await this.ensureRecord(sessionRef);
-    const session = this.requireSession(record);
-    this.applySessionThinkingLevel(session, thinkingLevel);
-    forcePersistPiSession(session.sessionManager);
-    record.config = deriveSessionConfig(session.sessionManager);
-    await this.persistSnapshot(record);
-    await this.emit(record, sessionUpdatedEvent(record));
+    // WP-002/TECHNICAL-SPEC §1: thinking level is pinned at the fixed model's
+    // medium. pi's session API cannot re-pin after creation, so a caller asking
+    // for the pinned level is a no-op and anything else is refused.
+    if (thinkingLevel === FIXED_THINKING_LEVEL) {
+      return;
+    }
+    throw new Error(
+      `Thinking level "${thinkingLevel}" is not available; the fixed model pins thinking at "${FIXED_THINKING_LEVEL}".`,
+    );
   }
 
   async renameSession(sessionRef: SessionRef, title: string): Promise<void> {

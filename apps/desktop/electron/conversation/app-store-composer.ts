@@ -57,7 +57,6 @@ type ConversationDriver = Pick<
   | "renameSession"
   | "replaceQueuedMessages"
   | "sendUserMessage"
-  | "setSessionModel"
   | "setSessionThinkingLevel"
   | "unarchiveSession"
 >;
@@ -176,11 +175,6 @@ export interface ConversationOwner {
     attachments: readonly ComposerAttachment[],
     options?: { readonly deliverAs?: "steer" | "followUp"; readonly allowCommands?: boolean },
   ): Promise<DesktopAppState>;
-  setSessionModel(
-    target: WorkspaceSessionTarget,
-    provider: string,
-    modelId: string,
-  ): Promise<DesktopAppState>;
   setSessionThinkingLevel(sessionRef: SessionRef, thinkingLevel: string): Promise<DesktopAppState>;
   cancelCurrentRun(sessionRef: SessionRef | undefined): Promise<DesktopAppState>;
   sendMessageToSession(
@@ -218,8 +212,6 @@ export function createConversationOwner(store: ConversationOwnerHost): Conversat
         : text.trimStart().startsWith("/"),
     submitComposerToSession: (sessionRef, text, attachments, options) =>
       submitComposerToSession(store, sessionRef, text, attachments, options),
-    setSessionModel: (target, provider, modelId) =>
-      setSessionModel(store, target, provider, modelId),
     setSessionThinkingLevel: (sessionRef, thinkingLevel) =>
       setSessionThinkingLevel(store, sessionRef, thinkingLevel),
     cancelCurrentRun: (sessionRef) => cancelCurrentRun(store, sessionRef),
@@ -667,23 +659,6 @@ async function sendExtensionCommand(
   await store.driver.sendUserMessage(sessionRef, { text, extensionCommandOnly: true });
 }
 
-async function setSessionModel(
-  store: ComposerStore,
-  target: WorkspaceSessionTarget,
-  provider: string,
-  modelId: string,
-): Promise<DesktopAppState> {
-  await store.initialize();
-  const sessionRef = toSessionRef(target);
-  const key = sessionKey(sessionRef);
-
-  return store.withErrorHandling(async () => {
-    await store.driver.setSessionModel(sessionRef, { provider, modelId });
-    syncSessionConfig(store, key, { provider, modelId });
-    return finishSessionChange(store, sessionRef, key, `Model set to ${provider}:${modelId}`);
-  });
-}
-
 async function setSessionThinkingLevel(
   store: ComposerStore,
   sessionRef: SessionRef,
@@ -884,20 +859,6 @@ async function runComposerCommand(
   }
 
   const key = sessionKey(sessionRef);
-
-  if (parsed.type === "model") {
-    await store.driver.setSessionModel(sessionRef, {
-      provider: parsed.provider,
-      modelId: parsed.modelId,
-    });
-    syncSessionConfig(store, key, { provider: parsed.provider, modelId: parsed.modelId });
-    return finishComposerCommand(
-      store,
-      sessionRef,
-      key,
-      `Model set to ${parsed.provider}:${parsed.modelId}`,
-    );
-  }
 
   if (parsed.type === "thinking") {
     await store.driver.setSessionThinkingLevel(sessionRef, parsed.thinkingLevel);

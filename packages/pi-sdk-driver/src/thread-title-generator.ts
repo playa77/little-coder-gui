@@ -8,13 +8,11 @@ import {
   type CreateAgentSessionOptions,
   type ResourceLoader,
 } from "@earendil-works/pi-coding-agent";
-import type { SessionModelSelection, WorkspaceRef } from "@pi-gui/session-driver";
+import type { WorkspaceRef } from "@pi-gui/session-driver";
 import { messageText as sessionMessageText } from "./session-supervisor-utils.js";
 
 export interface GenerateThreadTitleOptions {
   readonly prompt: string;
-  readonly model?: SessionModelSelection;
-  readonly thinkingLevel?: string;
   readonly signal?: AbortSignal;
 }
 
@@ -63,18 +61,6 @@ export async function generateThreadTitle(
     sessionManager: SessionManager.inMemory(),
     tools: [],
   };
-  if (options.model) {
-    const selectedModel = modelRuntime.getModel(options.model.provider, options.model.modelId);
-    if (!selectedModel) {
-      return null;
-    }
-    createOptions.model = selectedModel;
-  }
-  if (options.thinkingLevel) {
-    createOptions.thinkingLevel = options.thinkingLevel as NonNullable<
-      CreateAgentSessionOptions["thinkingLevel"]
-    >;
-  }
 
   const { session } = await createAgentSession(createOptions);
   const handleAbort = () => {

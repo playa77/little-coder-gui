@@ -64,8 +64,7 @@ interface DesktopCommandsInput {
   readonly hasWorkspace: boolean;
   readonly selectedRootWorkspaceId: string | undefined;
   /** The thread open in the main pane, with the actions its menus show. */
-  readonly selectedThread:
-    { readonly actions: readonly ThreadAction[]; readonly canSwitchModel: boolean } | undefined;
+  readonly selectedThread: { readonly actions: readonly ThreadAction[] } | undefined;
   readonly threadSidebarModel: ThreadSidebarModel | undefined;
   readonly threadShortcutOrderRef: RefObject<readonly ThreadListEntry[] | null>;
   /** Opens a thread the way a sidebar click does, saving the current draft and scroll first. */

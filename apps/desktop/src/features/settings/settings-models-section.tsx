@@ -4,6 +4,7 @@ import type {
   RuntimeSettingsSnapshot,
   RuntimeSnapshot,
 } from "@pi-gui/session-driver/runtime-types";
+import { fixedModelLabel } from "../../../contracts/fixed-model";
 import { SearchIcon } from "../../ui/icons";
 import { SettingsSelect, SettingsSwitch } from "./settings-controls";
 import {
@@ -16,7 +17,6 @@ import {
 
 interface SettingsModelsSectionProps {
   readonly runtime?: RuntimeSnapshot;
-  readonly onSetDefaultModel: (provider: string, modelId: string) => void;
   readonly onSetThinkingLevel: (
     thinkingLevel: RuntimeSettingsSnapshot["defaultThinkingLevel"],
   ) => void;
@@ -36,7 +36,6 @@ function modelPattern(model: RuntimeModelRecord): string {
 /** Cursor's Models page: defaults on top, then one searchable list with a switch per model. */
 export function SettingsModelsSection({
   runtime,
-  onSetDefaultModel,
   onSetThinkingLevel,
   onSetScopedModelPatterns,
   onOpenProviders,
@@ -77,19 +76,9 @@ export function SettingsModelsSection({
   return (
     <>
       <SettingsGroup>
-        <SettingsRow title="Default model" description="Used for new threads.">
-          <SettingsSelect
-            label="Default model"
-            options={enabledModels.map((model) => ({
-              value: `${model.providerId}:${model.modelId}`,
-              label: `${model.providerName} · ${model.label}`,
-            }))}
-            value={defaultIsEnabled ? defaultValue : undefined}
-            onChange={(value) => {
-              const [provider = "", ...modelParts] = value.split(":");
-              onSetDefaultModel(provider, modelParts.join(":"));
-            }}
-          />
+        {/* WP-002: the model is fixed by the driver; the row is read-only. */}
+        <SettingsRow title="Model" description="Little Coder runs Qwen3.5-9B through llama.cpp.">
+          <span className="settings-value-static">{fixedModelLabel()}</span>
         </SettingsRow>
         <SettingsRow title="Reasoning" description="Default reasoning effort for new threads.">
           <SettingsSelect

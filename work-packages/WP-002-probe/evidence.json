@@ -1,0 +1,32 @@
+[
+  {
+    "name": "session opens",
+    "pass": true,
+    "detail": "config=llamacpp:Qwen3.5-9B"
+  },
+  {
+    "name": "fixed pair resolved",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "context window probed from /props",
+    "pass": true,
+    "detail": "window=131072 probed=true"
+  },
+  {
+    "name": "models.json openai provider NOT the session model",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "turn completed against fake endpoint",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "name": "thinking re-selection refused",
+    "pass": true,
+    "detail": "Thinking level \"high\" is not available; the fixed model pins thinking at \"medium\"."
+  }
+]

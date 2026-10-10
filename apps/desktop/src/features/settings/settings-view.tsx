@@ -41,7 +41,6 @@ interface SettingsViewProps {
   readonly themePresetId: ThemePresetId;
   readonly enableTransparency: boolean;
   readonly onSetModelSettingsScopeMode: (mode: ModelSettingsScopeMode) => void;
-  readonly onSetDefaultModel: (provider: string, modelId: string) => void;
   readonly onSetThinkingLevel: (
     thinkingLevel: RuntimeSettingsSnapshot["defaultThinkingLevel"],
   ) => void;
@@ -79,7 +78,6 @@ export function SettingsView({
   themePresetId,
   enableTransparency,
   onSetModelSettingsScopeMode,
-  onSetDefaultModel,
   onSetThinkingLevel,
   onToggleSkillCommands,
   onSetScopedModelPatterns,
@@ -177,7 +175,6 @@ export function SettingsView({
             <SettingsModelsSection
               runtime={runtime}
               onOpenProviders={() => onSelectSection("providers")}
-              onSetDefaultModel={onSetDefaultModel}
               onSetScopedModelPatterns={onSetScopedModelPatterns}
               onSetThinkingLevel={onSetThinkingLevel}
             />

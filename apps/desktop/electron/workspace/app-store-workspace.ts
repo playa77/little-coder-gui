@@ -2,7 +2,6 @@ import { sessionKey } from "@pi-gui/session-driver";
 import type { PiSdkDriver } from "@pi-gui/pi-sdk-driver";
 import type { JsonCatalogStore } from "@pi-gui/catalogs/node";
 import type {
-  CreateSessionOptions,
   ExtensionFlagValues,
   SessionConfig,
   SessionRef,
@@ -77,7 +76,6 @@ export interface WorkspaceOwnerHost {
   cancelPendingDialogsForSession(sessionRef: SessionRef): Promise<void>;
   clearPendingAutoTitle(sessionRef: SessionRef): void;
   updateSessionConfig(sessionRef: SessionRef, config: SessionConfig | undefined): void;
-  buildCreateSessionOptions(workspaceId: string): Promise<CreateSessionOptions | undefined>;
   /** Check a new thread's flag choices against the flags this workspace's extensions registered. */
   resolveExtensionFlags(
     workspaceId: string,
@@ -409,9 +407,7 @@ async function createSession(
   }
 
   return store.withErrorHandling(async () => {
-    const createOptions = await store.buildCreateSessionOptions(input.workspaceId);
     const snapshot = await store.driver.createSession(ws, {
-      ...createOptions,
       title: input.title?.trim() || NEW_THREAD_PLACEHOLDER_TITLE,
     });
     store.seedSession(snapshot);

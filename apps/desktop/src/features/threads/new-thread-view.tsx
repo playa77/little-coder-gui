@@ -16,7 +16,6 @@ import type {
 import type { MentionOption } from "../conversation/hooks/use-mention-menu";
 import { ArrowUpIcon, PiLogoMark, PlusIcon } from "../../ui/icons";
 import {
-  MODEL_OPTIONS_EMPTY_TITLE,
   type ComposerSlashCommand,
   type ComposerSlashCommandSection,
   type ComposerSlashOption,
@@ -39,9 +38,6 @@ interface NewThreadViewProps {
   readonly prompt: string;
   readonly attachments: readonly ComposerAttachment[];
   readonly lastError?: string;
-  readonly provider: string | undefined;
-  readonly modelId: string | undefined;
-  readonly thinkingLevel: string | undefined;
   readonly modelOnboarding: ModelOnboardingState;
   readonly composerRef: RefObject<HTMLTextAreaElement | null>;
   readonly activeSlashCommand?: ComposerSlashCommand;
@@ -59,8 +55,6 @@ interface NewThreadViewProps {
   readonly onChangePrompt: (prompt: string) => void;
   readonly onSelectEnvironment: (environment: NewThreadEnvironment) => void;
   readonly onSelectWorkspace: (workspaceId: string) => void;
-  readonly onSetModel: (provider: string, modelId: string) => void;
-  readonly onSetThinking: (level: string) => void;
   readonly extensionFlags: ExtensionFlagValues;
   readonly onSetExtensionFlag: (name: string, value: boolean | string) => void;
   readonly onOpenModelSettings: (section: ModelOnboardingSettingsSection) => void;
@@ -87,9 +81,6 @@ export function NewThreadView({
   prompt,
   attachments,
   lastError,
-  provider,
-  modelId,
-  thinkingLevel,
   modelOnboarding,
   composerRef,
   activeSlashCommand,
@@ -107,8 +98,6 @@ export function NewThreadView({
   onChangePrompt,
   onSelectEnvironment,
   onSelectWorkspace,
-  onSetModel,
-  onSetThinking,
   extensionFlags,
   onSetExtensionFlag,
   onOpenModelSettings,
@@ -229,15 +218,10 @@ export function NewThreadView({
                 <NewThreadComposerFooter
                   runtime={runtime}
                   environment={environment}
-                  provider={provider}
-                  modelId={modelId}
-                  thinkingLevel={thinkingLevel}
                   modelOnboarding={modelOnboarding}
                   hasContent={Boolean(prompt.trim() || attachments.length > 0)}
                   fileInputRef={fileInputRef}
                   onSelectEnvironment={onSelectEnvironment}
-                  onSetModel={onSetModel}
-                  onSetThinking={onSetThinking}
                   extensionFlags={extensionFlags}
                   onSetExtensionFlag={onSetExtensionFlag}
                   onAddAttachments={onAddAttachments}
@@ -255,15 +239,10 @@ export function NewThreadView({
 interface NewThreadComposerFooterProps {
   readonly runtime?: RuntimeSnapshot;
   readonly environment: NewThreadEnvironment;
-  readonly provider: string | undefined;
-  readonly modelId: string | undefined;
-  readonly thinkingLevel: string | undefined;
   readonly modelOnboarding: ModelOnboardingState;
   readonly hasContent: boolean;
   readonly fileInputRef: RefObject<HTMLInputElement | null>;
   readonly onSelectEnvironment: (environment: NewThreadEnvironment) => void;
-  readonly onSetModel: (provider: string, modelId: string) => void;
-  readonly onSetThinking: (level: string) => void;
   readonly extensionFlags: ExtensionFlagValues;
   readonly onSetExtensionFlag: (name: string, value: boolean | string) => void;
   readonly onAddAttachments: (files: File[]) => void;
@@ -273,15 +252,10 @@ interface NewThreadComposerFooterProps {
 function NewThreadComposerFooter({
   runtime,
   environment,
-  provider,
-  modelId,
-  thinkingLevel,
   modelOnboarding,
   hasContent,
   fileInputRef,
   onSelectEnvironment,
-  onSetModel,
-  onSetThinking,
   extensionFlags,
   onSetExtensionFlag,
   onAddAttachments,
@@ -309,19 +283,7 @@ function NewThreadComposerFooter({
               </button>
             </div>
             <span className="new-thread__hint-separator">·</span>
-            <ModelSelector
-              runtime={runtime}
-              provider={provider}
-              modelId={modelId}
-              thinkingLevel={thinkingLevel}
-              dropdownPlacement="below"
-              showEmptyModelControl
-              unselectedModelLabel={modelOnboarding.unselectedModelLabel}
-              emptyModelLabel={MODEL_OPTIONS_EMPTY_TITLE}
-              emptyModelTitle={modelOnboarding.emptyModelTitle}
-              onSetModel={onSetModel}
-              onSetThinking={onSetThinking}
-            />
+            <ModelSelector runtime={runtime} />
             <ExtensionFlagsSelector
               runtime={runtime}
               values={extensionFlags}

@@ -10,7 +10,6 @@ import { titleCase } from "../../lib/string-utils";
 
 export type ComposerSlashCommandKind =
   | "runtime"
-  | "model"
   | "thinking"
   | "tree"
   | "status"
@@ -68,16 +67,6 @@ export const MODEL_OPTIONS_EMPTY_DESCRIPTION =
   "Open Settings to enable a model or log in to a provider.";
 
 const HOST_ACTION_SLASH_COMMANDS: readonly ComposerSlashCommand[] = [
-  {
-    id: "host:model",
-    kind: "model",
-    command: "/model",
-    template: "/model",
-    title: "Model",
-    description: "Choose the model for this session",
-    submitMode: "pick-option",
-    section: "host",
-  },
   {
     id: "host:thinking",
     kind: "thinking",
@@ -351,9 +340,6 @@ export function slashOptionsForCommand(
   if (command.kind === "thinking") {
     return THINKING_OPTIONS;
   }
-  if (command.kind === "model") {
-    return buildModelOptions(runtime);
-  }
   if (command.kind === "login") {
     return buildProviderOptions(runtime?.providers ?? [], (provider) => provider.oauthSupported);
   }
@@ -373,13 +359,6 @@ export function slashOptionEmptyState(
 ): ComposerSlashOptionEmptyState | undefined {
   if (!command) {
     return undefined;
-  }
-
-  if (command.kind === "model" && buildModelOptions(runtime).length === 0) {
-    return {
-      title: MODEL_OPTIONS_EMPTY_TITLE,
-      description: MODEL_OPTIONS_EMPTY_DESCRIPTION,
-    };
   }
 
   return undefined;
